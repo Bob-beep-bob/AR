@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Marker AR — QR Target</title>
+
+  <!-- A-Frame + MindAR (image tracking) -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    html, body { height:100%; margin:0; overflow:hidden; font-family:Arial, sans-serif; }
+    #startButton {
+      position: absolute; z-index: 20; left: 50%; transform: translateX(-50%);
+      top: 20px; padding: 10px 16px; border-radius: 8px; background: #0066ff; color: white;
+      border: none; font-size: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    }
+    #instructions {
+      position: absolute; z-index:20; bottom: 18px; left: 12px; right:12px; 
+      color: white; text-align:center; font-size:14px; text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- start button helps with permission flow on iOS/Android -->
+  <button id="startButton">Start AR (Allow camera)</button>
+  <div id="instructions">Point the camera at the printed QR code. Move camera slowly.</div>
+
+  <a-scene
+    mindar-image="imageTargetSrc: qr.mind; maxTrack: 1;"
+    embedded
+    color-space="sRGB"
+    renderer="antialias: true; alpha: true; physicallyCorrectLights: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: true"
+  >
+    <a-assets>
+      <!-- Make sure id matches src in a-gltf-model via "#model" -->
+      <a-asset-item id="model" src="model.glb"></a-asset-item>
+    </a-assets>
+
+    <a-camera position="0 0 0"></a-camera>
+
+    <!-- put your model onto the 1st target (index 0) -->
+    <a-entity mindar-image-target="targetIndex: 0">
+      <!-- tune position/scale/rotation to sit nicely on your printed QR -->
+      <a-gltf-model src="#model"
+                    position="0 0 0"
+                    rotation="0 0 0"
+                    scale="0.05 0.05 0.05"
+                    animation-mixer>
+      </a-gltf-model>
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    const startBtn = document.getElementById('startButton');
+    const sceneEl = document.querySelector('a-scene');
+
+    startBtn.addEventListener('click', async () => {
+      try {
+        // start MindAR engine (triggers camera permissions)
+        await sceneEl.components['mindar-image'].start();
+        startBtn.style.display = 'none';
+        document.getElementById('instructions').style.display = 'none';
+      } catch (err) {
+        alert('Camera permission required. Please allow camera access.');
+        console.error(err);
+      }
+    });
+
+    // Optional: stop when page hidden
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && sceneEl.components['mindar-image'].isRunning) {
+        sceneEl.components['mindar-image'].stop();
+      }
+    });
+  </script>
+</body>
+</html>
